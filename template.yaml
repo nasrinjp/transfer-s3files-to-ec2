@@ -2,6 +2,7 @@ AWSTemplateFormatVersion: 2010-09-09
 Transform: AWS::Serverless-2016-10-31
 Description: >
   Transfer S3 file to EC2 instance.
+
 Globals:
   Function:
     Timeout: 60

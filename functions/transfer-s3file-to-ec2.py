@@ -10,7 +10,6 @@ ssm = boto3.client('ssm')
 instance_id = os.getenv('target_instance_id')
 s3_defined_prefix = os.getenv('s3_defined_prefix')
 target_directory = os.getenv('target_directory')
-#s3bucket = os.getenv('s3bucket')
 
 def lambda_handler(event, context):
     try:
