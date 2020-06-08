@@ -1,0 +1,98 @@
+AWSTemplateFormatVersion: 2010-09-09
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  Transfer S3 file to EC2 instance.
+Globals:
+  Function:
+    Timeout: 60
+
+Parameters:
+  TargetInstanceId:
+    Type: String
+    Description: Specify EC2 Instance where SSM Run Command is executed.
+  S3DefinedPrefix:
+    Type: String
+    Description: Specify S3 prefix for S3 event trigger.
+  TargetDirectory:
+    Type: String
+    Description: Specify the directory in EC2 instance for transfering files.
+
+Resources:
+  TransferFilesFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: functions
+      Handler: transfer-s3file-to-ec2.lambda_handler
+      Runtime: python3.8
+      Description: "Transfer S3 file to EC2 instance."
+      Environment:
+        Variables:
+          target_instance_id: !Ref TargetInstanceId
+          s3_defined_prefix: !Ref S3DefinedPrefix
+          target_directory: !Ref TargetDirectory
+      Events:
+        S3Event:
+          Type: S3
+          Properties:
+            Bucket: !Ref SourceS3Bucket
+            Events: s3:ObjectCreated:*
+      Role: !GetAtt TransferFilesLambdaRole.Arn
+
+  TransferFilesLambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - sts:AssumeRole
+
+  TransferFilesLambdaPolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Action: logs:CreateLogGroup
+            Resource: !Sub arn:aws:logs:${AWS::Region}:${AWS::AccountId}:*
+          - Effect: Allow
+            Action:
+              - logs:CreateLogStream
+              - logs:PutLogEvents
+            Resource:
+              - !Sub arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${TransferFilesFunction}:*
+          - Effect: Allow
+            Action:
+              - ssm:SendCommand
+              - ec2:DescribeInstances
+            Resource:
+              - "*"
+      PolicyName: !Sub ${AWS::StackName}-${TransferFilesFunction}-policy
+      Roles:
+        - !Ref TransferFilesLambdaRole
+
+  SourceS3Bucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub "beex-bastion-filetransfer-${AWS::Region}-${AWS::AccountId}"
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+
+Outputs:
+  TransferFilesFunction:
+    Description: "Manage Tag Lambda Function ARN"
+    Value: !GetAtt TransferFilesFunction.Arn
+    Export:
+      Name: !Sub ${AWS::StackName}-TransferFilesFunctionArn
