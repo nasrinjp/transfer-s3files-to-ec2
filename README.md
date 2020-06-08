@@ -11,10 +11,10 @@ Transfer S3 file to EC2 instance.
 ### Variables examples
 
 S3DefinedPrefix: scripts/functions  
-TargetDirectory: C:\\scripts\\functions\\  
+TargetDirectory: C:\\\\scripts\\\\functions\\\\  
 
 If you deploy using --parameter-overrides option, you need to specify the TargetDirectory as follows.
-C:\\\\scripts\\\\functions\\\\
+C:\\\\\\\\scripts\\\\\\\\functions\\\\\\\\
 
 ## Build
 To build, execute the following command.
